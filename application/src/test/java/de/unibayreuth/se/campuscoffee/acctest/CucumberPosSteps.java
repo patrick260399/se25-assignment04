@@ -88,12 +88,36 @@ public class CucumberPosSteps {
         assertThat(retrievedPosList).isEmpty();
     }
 
+    @Given("the following POS exist:")
+    public void givenPosWithNameAndDescription(List<Map<String, String>> posTable) {
+        List<PosDto> posList = posTable.stream()
+                .map(row -> PosDto.builder()
+                        .name(row.get("name"))
+                        .description(row.get("description"))
+                        .type(PosType.CAFE) // Standardwerte für fehlende Felder
+                        .campus(CampusType.MAIN)
+                        .street("Musterstraße")
+                        .houseNumber("1")
+                        .postalCode(12345)
+                        .city("Beispielstadt")
+                        .build())
+                .toList();
+        createPos(posList);
+    }
+
     // When -----------------------------------------------------------------------
 
     @When("I insert POS with the following elements")
     public void iInsertPosWithTheFollowingValues(List<PosDto> posList) {
         createdPosList = createPos(posList);
         assertThat(createdPosList).size().isEqualTo(posList.size());
+    }
+
+    @When("I update the description of {string} to {string}")
+    public void updatePosDescription(String name, String newDescription) {
+        PosDto pos = retrievePosByName(name);
+        pos.setDescription(newDescription);
+        updatePos(List.of(pos));
     }
 
     // Then -----------------------------------------------------------------------
@@ -105,4 +129,11 @@ public class CucumberPosSteps {
                 .usingRecursiveFieldByFieldElementComparatorIgnoringFields("id", "createdAt", "updatedAt")
                 .containsExactlyInAnyOrderElementsOf(createdPosList);
     }
+
+    @Then("the description of {string} should be {string}")
+    public void assertPosDescription(String name, String expectedDescription) {
+        PosDto pos = retrievePosByName(name);
+        assertThat(pos.getDescription()).isEqualTo(expectedDescription);
+    }
+
 }
